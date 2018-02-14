@@ -10,137 +10,125 @@ namespace Marvin.SigningAndEncryption.Controllers
     [Route("api/signencrypt")]
     public class SignEncryptController : Controller
     {
-        private readonly X509Certificate2 signingCertificate;
-        private readonly X509Certificate2 encryptionCertificate;
-        private readonly RSACryptoServiceProvider publicSigningKey;
-        private readonly RSACryptoServiceProvider privateSigningKey;
-        private readonly RSACryptoServiceProvider publicEncryptionKey;
-        private readonly RSACryptoServiceProvider privateEncryptionKey;
+        private readonly X509Certificate2 _signingCertificate;
+        private readonly X509Certificate2 _encryptionCertificate;
+        private readonly RSACryptoServiceProvider _publicSigningKey;
+        private readonly RSACryptoServiceProvider _privateSigningKey;
+        private readonly RSACryptoServiceProvider _publicEncryptionKey;
+        private readonly RSACryptoServiceProvider _privateEncryptionKey;
 
-        public SignEncryptController()
-        {
-            signingCertificate = new X509Certificate2(@"Certificates\test-sign.pfx", "Test",
-              X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-            encryptionCertificate = new X509Certificate2(@"Certificates\test-encrypt.pfx", "Test",
-             X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-
-            publicSigningKey = signingCertificate.PublicKey.Key as RSACryptoServiceProvider;
-            privateSigningKey = signingCertificate.PrivateKey as RSACryptoServiceProvider;          
-
-            publicEncryptionKey = encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider;
-            privateEncryptionKey = encryptionCertificate.PrivateKey as RSACryptoServiceProvider;
-        }
-
-
-        // GET api/values
-        [HttpGet]
-        public IActionResult Get()
-        {
-            var tokenToSign = new Dictionary<string, object>()
+        private Dictionary<string, object> token = new Dictionary<string, object>()
             {
                 { "sub", "signedkevin" },
                 { "exp", 1300819380 }
             };
 
-            // TEST signing
+        public SignEncryptController()
+        {
+            _signingCertificate = new X509Certificate2(
+                @"Certificates\test-sign.pfx",
+                "Test",
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
 
-            // sign with private key, check signature with public key (you can also check the signature
+            _encryptionCertificate = new X509Certificate2(
+                @"Certificates\test-encrypt.pfx",
+                "Test",
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+
+            _publicSigningKey = _signingCertificate.PublicKey.Key as RSACryptoServiceProvider;
+            _privateSigningKey = _signingCertificate.PrivateKey as RSACryptoServiceProvider;
+
+            _publicEncryptionKey = _encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider;
+            _privateEncryptionKey = _encryptionCertificate.PrivateKey as RSACryptoServiceProvider;
+        }
+
+        [HttpGet("signtoken")]
+        public IActionResult SignToken()
+        {
+            // sign with private key
+            var signedToken = Jose.JWT.Encode(token, _privateSigningKey, JwsAlgorithm.RS256);
+
+            // check signature with public key (you can also check the signature
             // with the private key of course, but that one shouldn't be given away ;))
-            var signedToken = Jose.JWT.Encode(tokenToSign, privateSigningKey, JwsAlgorithm.RS256);
-            var decodedToken = Jose.JWT.Decode(signedToken, publicSigningKey);
+            var decodedToken = Jose.JWT.Decode(signedToken, _publicSigningKey);
 
-            // TEST encryption
-            // encrypt with the public key, decrypt with the private key
+            return Json(new string[] {
+                $"Original token: {token}",
+                $"Signed token: {signedToken}",
+                $"Decoded token: {decodedToken}"
+            }
+            );
+        }
 
-            var tokenToEncrypt = new Dictionary<string, object>()
-            {
-                { "sub", "encryptedkevin" },
-                { "exp", 1300819380 }
-            };
-
+        [HttpGet("encrypttoken")]
+        public IActionResult EncryptToken()
+        {
             // encrypt with public key
-            var encryptedToken = Jose.JWT.Encode(tokenToSign, publicEncryptionKey,
+            var encryptedToken = Jose.JWT.Encode(token, _publicEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
             // decrypt with private key           
-            var decryptedToken = Jose.JWT.Decode(encryptedToken, privateEncryptionKey,
+            var decryptedToken = Jose.JWT.Decode(encryptedToken, _privateEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
-
-
-            // test encryption/signing combo
-            var tokenToEncryptAndSign = new Dictionary<string, object>()
-            {
-                { "sub", "encryptedAndSignedkevin" },
-                { "exp", 1300819380 }
-            };
-
-            var tokenToEncryptAndSign_encrypted =
-                Jose.JWT.Encode(tokenToEncryptAndSign, publicEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
-
-            var tokenToEncryptAndSign_encryptedandsigned =
-                Jose.JWT.Encode(tokenToEncryptAndSign_encrypted, privateSigningKey, JwsAlgorithm.RS256);
-
-            var tokenToEncryptAndSign_encryptedandsigned_decoded =
-                Jose.JWT.Decode(tokenToEncryptAndSign_encryptedandsigned, publicSigningKey);
-
-            var tokenToEncryptAndSign_encryptedandsigned_decodeddecrypted =
-                Jose.JWT.Decode(tokenToEncryptAndSign_encryptedandsigned_decoded, privateEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
-
-
-            var tokenToSignAndEncrypt = new Dictionary<string, object>()
-            {
-                { "sub", "signedAndEncryptedkevin" },
-                { "exp", 1300819380 }
-            };
-
-            var tokenToSignAndEncrypt_encrypted =
-                Jose.JWT.Encode(tokenToSignAndEncrypt, publicEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
-
-            var tokenToSignAndEncrypt_encryptedandsigned =
-                Jose.JWT.Encode(tokenToSignAndEncrypt_encrypted, privateSigningKey, JwsAlgorithm.RS256);
-
-            var tokenToSignAndEncrypt_encryptedandsigned_decoded =
-                Jose.JWT.Decode(tokenToSignAndEncrypt_encryptedandsigned, publicSigningKey);
-
-            var tokenToSignAndEncrypt_encryptedandsigned_decodeddecrypted =
-                Jose.JWT.Decode(tokenToSignAndEncrypt_encryptedandsigned_decoded, privateEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
-
-
-            // get  thumbprint (kid), exponent (e) and modulus (n) (useful for generating jwkset)
-            var rsaSigningKeyParameters = publicSigningKey.ExportParameters(false);
-            var exponentSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Exponent);
-            var modulusSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Modulus);
-            var signingCertificateThumbprint = signingCertificate.Thumbprint;
-
-
-            var rsaEncryptionKeyParameters = publicEncryptionKey.ExportParameters(false);
-            var exponentEncryptasString = Base64Url.Encode(rsaEncryptionKeyParameters.Exponent);
-            var modulusEncryptAsString = Base64Url.Encode(rsaEncryptionKeyParameters.Modulus);
-            var encryptionCertificateThumbprint = encryptionCertificate.Thumbprint;
-
 
             return Json(new string[] {
-                $"Public signing key exponent: {exponentSignAsString}",
-                $"Public signing key modulus: {modulusSignAsString}",
-                $"Public signing certificate thumbprint: {signingCertificateThumbprint}",
-                $"Public encryption key exponent: {exponentEncryptasString}",
-                $"Public encryption key modulus: {modulusEncryptAsString}",
-                $"Public encryption certificate thumbprint: {encryptionCertificateThumbprint}",
-                "Encrypt first, sign later",
-                tokenToEncryptAndSign_encrypted,
-                tokenToEncryptAndSign_encryptedandsigned,
-                tokenToEncryptAndSign_encryptedandsigned_decoded,
-                tokenToEncryptAndSign_encryptedandsigned_decodeddecrypted,
-                "Sign first, encrypt later",
-                tokenToSignAndEncrypt_encrypted,
-                tokenToSignAndEncrypt_encryptedandsigned,
-                tokenToSignAndEncrypt_encryptedandsigned_decoded,
-                tokenToSignAndEncrypt_encryptedandsigned_decodeddecrypted,
+                $"Original token: {token}",
+                $"Encrypted token: {encryptedToken}",
+                $"Decrypted token: {decryptedToken}"
+            }
+            );
+        }
+
+        [HttpGet("signandencrypttoken")]
+        public IActionResult SignAndEncryptToken()
+        {
+            var signedToken =
+                Jose.JWT.Encode(token, _privateSigningKey, JwsAlgorithm.RS256);
+
+            var signedAndEncryptedToken = Jose.JWT.Encode(signedToken, _publicEncryptionKey,
+                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+
+            var signedAndDecryptedToken =
+                  Jose.JWT.Decode(signedAndEncryptedToken, _privateEncryptionKey,
+                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+
+            var decodedAndDecryptedToken =
+                Jose.JWT.Decode(signedAndDecryptedToken, _publicSigningKey);
+
+            return Json(new string[] {
+                $"Original token: {token}",
+                $"Signed token: {signedToken}",
+                $"Signed and encrypted token: {signedAndEncryptedToken}",
+                $"Signed and decrypted token: {signedAndDecryptedToken}",
+                $"Decoded and decrypted token: {decodedAndDecryptedToken}"
             });
+        }
+
+        [HttpGet("encryptandsigntoken")]
+        public IActionResult EncryptAndSignToken()
+        {
+            var encryptedToken =
+             Jose.JWT.Encode(token, _publicEncryptionKey,
+             JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+
+            var encryptedAndSignedToken =
+                Jose.JWT.Encode(encryptedToken, _privateSigningKey, JwsAlgorithm.RS256);
+
+            var encryptedAndDecodedToken =
+                Jose.JWT.Decode(encryptedAndSignedToken, _publicSigningKey);
+
+            var decryptedAndDecodedToken =
+                Jose.JWT.Decode(encryptedAndDecodedToken, _privateEncryptionKey,
+                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+
+            return Json(new string[] {
+                $"Original token: {token}",
+                $"Encrypted token: {encryptedToken}",
+                $"Encrypted and signed token: {encryptedAndSignedToken}",
+                $"Encrypted and decoded token: {encryptedAndDecodedToken}",
+                $"Decrypted and decoded token: {decryptedAndDecodedToken}"
+            }
+            );
         }
     }
 }
