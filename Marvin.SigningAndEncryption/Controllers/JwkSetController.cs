@@ -49,7 +49,7 @@ namespace Marvin.SigningAndEncryption.Controllers
 
             var exportedEncryptionCertificateThumbprint = encryptionCertificate.Thumbprint;
 
-            var rsaEncryptionKeyParameters = (signingCertificate.PublicKey.Key as RSACryptoServiceProvider)
+            var rsaEncryptionKeyParameters = (encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider)
                .ExportParameters(false);
 
             // get exponent and modulus 
