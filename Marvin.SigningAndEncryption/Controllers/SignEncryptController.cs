@@ -103,13 +103,13 @@ namespace Marvin.SigningAndEncryption.Controllers
             var rsaSigningKeyParameters = publicSigningKey.ExportParameters(false);
             var exponentSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Exponent);
             var modulusSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Modulus);
-            var signingCertificateThumbprint = Convert.ToBase64String(signingCertificate.Export(X509ContentType.Cert));
+            var signingCertificateThumbprint = signingCertificate.Thumbprint;
 
 
             var rsaEncryptionKeyParameters = publicEncryptionKey.ExportParameters(false);
             var exponentEncryptasString = Base64Url.Encode(rsaEncryptionKeyParameters.Exponent);
             var modulusEncryptAsString = Base64Url.Encode(rsaEncryptionKeyParameters.Modulus);
-            var encryptionCertificateThumbprint = Convert.ToBase64String(encryptionCertificate.Export(X509ContentType.Cert));
+            var encryptionCertificateThumbprint = encryptionCertificate.Thumbprint;
 
 
             return new string[] {
