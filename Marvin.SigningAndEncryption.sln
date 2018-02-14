@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Marvin.SigningAndEncryption", "Marvin.SigningAndEncryption\Marvin.SigningAndEncryption.csproj", "{C128201E-7207-498C-B0FB-3B413021B43B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Marvin.SigningAndEncryption.Core", "Marvin.SigningAndEncryption.Core\Marvin.SigningAndEncryption.Core.csproj", "{F08D05FF-BC4A-4CD3-A100-28F0F2191FC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{C128201E-7207-498C-B0FB-3B413021B43B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C128201E-7207-498C-B0FB-3B413021B43B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C128201E-7207-498C-B0FB-3B413021B43B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F08D05FF-BC4A-4CD3-A100-28F0F2191FC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F08D05FF-BC4A-4CD3-A100-28F0F2191FC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F08D05FF-BC4A-4CD3-A100-28F0F2191FC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F08D05FF-BC4A-4CD3-A100-28F0F2191FC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
