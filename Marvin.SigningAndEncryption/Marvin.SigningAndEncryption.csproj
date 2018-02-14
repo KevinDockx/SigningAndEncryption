@@ -20,23 +20,11 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="Certificates\telindus-encrypt.pfx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Certificates\telindus-sign.pfx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+  <ItemGroup>  
     <None Update="Certificates\test-encrypt.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Certificates\test-sign.pfx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="telindus-encrypt.pfx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="telindus-sign.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
