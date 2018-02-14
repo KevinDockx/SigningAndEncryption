@@ -10,10 +10,11 @@ using System.Threading.Tasks;
 
 namespace Marvin.SigningAndEncryption.Controllers
 {
-    public class JwkSetController
+    [Route("api/jwkset")]
+    public class JwkSetController : Controller
     {
         [HttpGet]
-        public string Get()
+        public IActionResult Get()
         {
             // generate a jwkset containing public keys for signing and
             // encrypting.   
@@ -71,9 +72,11 @@ namespace Marvin.SigningAndEncryption.Controllers
             jwkKeyPairSet.Keys.Add(signingKeyPair);
             jwkKeyPairSet.Keys.Add(encryptionKeyPair);
 
-            var camelCaseFormatter = new JsonSerializerSettings();
-            camelCaseFormatter.ContractResolver = new CamelCasePropertyNamesContractResolver();
-            return JsonConvert.SerializeObject(jwkKeyPairSet, camelCaseFormatter);
+            return Json(jwkKeyPairSet);
+
+            //var camelCaseFormatter = new JsonSerializerSettings();
+            //camelCaseFormatter.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            //return JsonConvert.SerializeObject(jwkKeyPairSet, camelCaseFormatter);
         }
     }
 }

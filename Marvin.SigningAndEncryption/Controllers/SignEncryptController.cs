@@ -10,11 +10,33 @@ namespace Marvin.SigningAndEncryption.Controllers
     [Route("api/signencrypt")]
     public class SignEncryptController : Controller
     {
+        private readonly X509Certificate2 signingCertificate;
+        private readonly X509Certificate2 encryptionCertificate;
+        private readonly RSACryptoServiceProvider publicSigningKey;
+        private readonly RSACryptoServiceProvider privateSigningKey;
+        private readonly RSACryptoServiceProvider publicEncryptionKey;
+        private readonly RSACryptoServiceProvider privateEncryptionKey;
+
+        public SignEncryptController()
+        {
+            signingCertificate = new X509Certificate2(@"Certificates\test-sign.pfx", "Test",
+              X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+            encryptionCertificate = new X509Certificate2(@"Certificates\test-encrypt.pfx", "Test",
+             X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+
+            publicSigningKey = signingCertificate.PublicKey.Key as RSACryptoServiceProvider;
+            privateSigningKey = signingCertificate.PrivateKey as RSACryptoServiceProvider;          
+
+            publicEncryptionKey = encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider;
+            privateEncryptionKey = encryptionCertificate.PrivateKey as RSACryptoServiceProvider;
+        }
+
+
         // GET api/values
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult Get()
         {
-            var payloadToSign = new Dictionary<string, object>()
+            var tokenToSign = new Dictionary<string, object>()
             {
                 { "sub", "signedkevin" },
                 { "exp", 1300819380 }
@@ -24,78 +46,67 @@ namespace Marvin.SigningAndEncryption.Controllers
 
             // sign with private key, check signature with public key (you can also check the signature
             // with the private key of course, but that one shouldn't be given away ;))
-            var signingCertificate = new X509Certificate2(@"Certificates\test-sign.pfx", "Test",
-                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-
-            var privateSigningKey = signingCertificate.PrivateKey as RSACryptoServiceProvider;
-            var signedToken = Jose.JWT.Encode(payloadToSign, privateSigningKey, JwsAlgorithm.RS256);
-
-            var publicSigningKey = signingCertificate.PublicKey.Key as RSACryptoServiceProvider;
+            var signedToken = Jose.JWT.Encode(tokenToSign, privateSigningKey, JwsAlgorithm.RS256);
             var decodedToken = Jose.JWT.Decode(signedToken, publicSigningKey);
 
             // TEST encryption
             // encrypt with the public key, decrypt with the private key
 
-            var payloadToEncrypt = new Dictionary<string, object>()
+            var tokenToEncrypt = new Dictionary<string, object>()
             {
                 { "sub", "encryptedkevin" },
                 { "exp", 1300819380 }
             };
 
-            var encryptionCertificate = new X509Certificate2(@"Certificates\test-encrypt.pfx", "Test",
-                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-
             // encrypt with public key
-            var publicEncryptionKey = encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider;
-            var encryptedPayload = Jose.JWT.Encode(payloadToSign, publicEncryptionKey,
+            var encryptedToken = Jose.JWT.Encode(tokenToSign, publicEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
-            // decrypt with private key
-            var privateEncryptionKey = encryptionCertificate.PrivateKey as RSACryptoServiceProvider;
-            var decryptedPayload = Jose.JWT.Decode(encryptedPayload, privateEncryptionKey,
+            // decrypt with private key           
+            var decryptedToken = Jose.JWT.Decode(encryptedToken, privateEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
 
             // test encryption/signing combo
-            var payloadToEncryptAndSign = new Dictionary<string, object>()
+            var tokenToEncryptAndSign = new Dictionary<string, object>()
             {
                 { "sub", "encryptedAndSignedkevin" },
                 { "exp", 1300819380 }
             };
 
-            var payloadToEncryptAndSign_encrypted =
-                Jose.JWT.Encode(payloadToEncryptAndSign, publicEncryptionKey,
+            var tokenToEncryptAndSign_encrypted =
+                Jose.JWT.Encode(tokenToEncryptAndSign, publicEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
-            var payloadToEncryptAndSign_encryptedandsigned =
-                Jose.JWT.Encode(payloadToEncryptAndSign_encrypted, privateSigningKey, JwsAlgorithm.RS256);
+            var tokenToEncryptAndSign_encryptedandsigned =
+                Jose.JWT.Encode(tokenToEncryptAndSign_encrypted, privateSigningKey, JwsAlgorithm.RS256);
 
-            var payloadToEncryptAndSign_encryptedandsigned_decoded =
-                Jose.JWT.Decode(payloadToEncryptAndSign_encryptedandsigned, publicSigningKey);
+            var tokenToEncryptAndSign_encryptedandsigned_decoded =
+                Jose.JWT.Decode(tokenToEncryptAndSign_encryptedandsigned, publicSigningKey);
 
-            var payloadToEncryptAndSign_encryptedandsigned_decodeddecrypted =
-                Jose.JWT.Decode(payloadToEncryptAndSign_encryptedandsigned_decoded, privateEncryptionKey,
+            var tokenToEncryptAndSign_encryptedandsigned_decodeddecrypted =
+                Jose.JWT.Decode(tokenToEncryptAndSign_encryptedandsigned_decoded, privateEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
 
-            var payloadToSignAndEncrypt = new Dictionary<string, object>()
+            var tokenToSignAndEncrypt = new Dictionary<string, object>()
             {
                 { "sub", "signedAndEncryptedkevin" },
                 { "exp", 1300819380 }
             };
 
-            var payloadToSignAndEncrypt_encrypted =
-                Jose.JWT.Encode(payloadToSignAndEncrypt, publicEncryptionKey,
+            var tokenToSignAndEncrypt_encrypted =
+                Jose.JWT.Encode(tokenToSignAndEncrypt, publicEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
-            var payloadToSignAndEncrypt_encryptedandsigned =
-                Jose.JWT.Encode(payloadToSignAndEncrypt_encrypted, privateSigningKey, JwsAlgorithm.RS256);
+            var tokenToSignAndEncrypt_encryptedandsigned =
+                Jose.JWT.Encode(tokenToSignAndEncrypt_encrypted, privateSigningKey, JwsAlgorithm.RS256);
 
-            var payloadToSignAndEncrypt_encryptedandsigned_decoded =
-                Jose.JWT.Decode(payloadToSignAndEncrypt_encryptedandsigned, publicSigningKey);
+            var tokenToSignAndEncrypt_encryptedandsigned_decoded =
+                Jose.JWT.Decode(tokenToSignAndEncrypt_encryptedandsigned, publicSigningKey);
 
-            var payloadToSignAndEncrypt_encryptedandsigned_decodeddecrypted =
-                Jose.JWT.Decode(payloadToSignAndEncrypt_encryptedandsigned_decoded, privateEncryptionKey,
+            var tokenToSignAndEncrypt_encryptedandsigned_decodeddecrypted =
+                Jose.JWT.Decode(tokenToSignAndEncrypt_encryptedandsigned_decoded, privateEncryptionKey,
                 JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
 
 
@@ -112,7 +123,7 @@ namespace Marvin.SigningAndEncryption.Controllers
             var encryptionCertificateThumbprint = encryptionCertificate.Thumbprint;
 
 
-            return new string[] {
+            return Json(new string[] {
                 $"Public signing key exponent: {exponentSignAsString}",
                 $"Public signing key modulus: {modulusSignAsString}",
                 $"Public signing certificate thumbprint: {signingCertificateThumbprint}",
@@ -120,16 +131,16 @@ namespace Marvin.SigningAndEncryption.Controllers
                 $"Public encryption key modulus: {modulusEncryptAsString}",
                 $"Public encryption certificate thumbprint: {encryptionCertificateThumbprint}",
                 "Encrypt first, sign later",
-                payloadToEncryptAndSign_encrypted,
-                payloadToEncryptAndSign_encryptedandsigned,
-                payloadToEncryptAndSign_encryptedandsigned_decoded,
-                payloadToEncryptAndSign_encryptedandsigned_decodeddecrypted,
+                tokenToEncryptAndSign_encrypted,
+                tokenToEncryptAndSign_encryptedandsigned,
+                tokenToEncryptAndSign_encryptedandsigned_decoded,
+                tokenToEncryptAndSign_encryptedandsigned_decodeddecrypted,
                 "Sign first, encrypt later",
-                payloadToSignAndEncrypt_encrypted,
-                payloadToSignAndEncrypt_encryptedandsigned,
-                payloadToSignAndEncrypt_encryptedandsigned_decoded,
-                payloadToSignAndEncrypt_encryptedandsigned_decodeddecrypted,
-            };
+                tokenToSignAndEncrypt_encrypted,
+                tokenToSignAndEncrypt_encryptedandsigned,
+                tokenToSignAndEncrypt_encryptedandsigned_decoded,
+                tokenToSignAndEncrypt_encryptedandsigned_decodeddecrypted,
+            });
         }
     }
 }
