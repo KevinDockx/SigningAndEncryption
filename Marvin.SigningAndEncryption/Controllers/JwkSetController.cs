@@ -1,33 +1,43 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace Marvin.SigningAndEncryption.Controllers
 {
     [Route("api/jwkset")]
     public class JwkSetController : Controller
     {
+        private readonly X509Certificate2 _signingCertificate;
+        private readonly X509Certificate2 _encryptionCertificate;
+
+        public JwkSetController()
+        {
+            _signingCertificate = new X509Certificate2(
+                @"Certificates\test-sign.pfx",
+                "Test",
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+
+            _encryptionCertificate = new X509Certificate2(
+                @"Certificates\test-encrypt.pfx",
+                "Test",
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+        }
+
+
+        /// <summary>
+        /// Generate a jwkset containing public keys for signing and
+        /// encrypting.   
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IActionResult Get()
         {
-            // generate a jwkset containing public keys for signing and
-            // encrypting.   
-
-            var signingCertificate = new X509Certificate2(@"Certificates\test-sign.pfx", "Test",
-              X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
-
-            var exportedSigningCertificateThumbprint = signingCertificate.Thumbprint;
-
-            var rsaSigningKeyParameters = (signingCertificate.PublicKey.Key as RSACryptoServiceProvider)
+            // get Kid, Exponent and Modulus
+            var exportedSigningCertificateThumbprint = _signingCertificate.Thumbprint;
+            var rsaSigningKeyParameters = (_signingCertificate.PublicKey.Key as RSACryptoServiceProvider)
                 .ExportParameters(false);
 
-            // get exponent and modulus 
             var exponentSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Exponent);
             var modulusSignAsString = Base64Url.Encode(rsaSigningKeyParameters.Modulus);
 
@@ -41,19 +51,12 @@ namespace Marvin.SigningAndEncryption.Controllers
                 Kty = "RSA",
                 N = modulusSignAsString
             };
-            
-            var encryptionCertificate = new X509Certificate2(@"Certificates\test-encrypt.pfx", "Test",
-             X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
 
-            var exportedEncryptionCertificatePublicKey =
-            Convert.ToBase64String(encryptionCertificate.Export(X509ContentType.Cert));
-
-            var exportedEncryptionCertificateThumbprint = encryptionCertificate.Thumbprint;
-
-            var rsaEncryptionKeyParameters = (encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider)
+            // get Kid, Exponent and Modulus
+            var exportedEncryptionCertificateThumbprint = _encryptionCertificate.Thumbprint;
+            var rsaEncryptionKeyParameters = (_encryptionCertificate.PublicKey.Key as RSACryptoServiceProvider)
                .ExportParameters(false);
-
-            // get exponent and modulus 
+            
             var exponentEncryptAsString = Base64Url.Encode(rsaEncryptionKeyParameters.Exponent);
             var modulusEncryptAsString = Base64Url.Encode(rsaEncryptionKeyParameters.Modulus);
 
@@ -73,10 +76,6 @@ namespace Marvin.SigningAndEncryption.Controllers
             jwkKeyPairSet.Keys.Add(encryptionKeyPair);
 
             return Json(jwkKeyPairSet);
-
-            //var camelCaseFormatter = new JsonSerializerSettings();
-            //camelCaseFormatter.ContractResolver = new CamelCasePropertyNamesContractResolver();
-            //return JsonConvert.SerializeObject(jwkKeyPairSet, camelCaseFormatter);
         }
     }
 }

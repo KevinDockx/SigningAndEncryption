@@ -1,6 +1,4 @@
-﻿using Jose;
-using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -46,7 +44,7 @@ namespace Marvin.SigningAndEncryption.Controllers
         public IActionResult SignToken()
         {
             // sign with private key
-            var signedToken = Jose.JWT.Encode(token, _privateSigningKey, JwsAlgorithm.RS256);
+            var signedToken = Jose.JWT.Encode(token, _privateSigningKey, Jose.JwsAlgorithm.RS256);
 
             // check signature with public key (you can also check the signature
             // with the private key of course, but that one shouldn't be given away ;))
@@ -65,11 +63,11 @@ namespace Marvin.SigningAndEncryption.Controllers
         {
             // encrypt with public key
             var encryptedToken = Jose.JWT.Encode(token, _publicEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+                Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             // decrypt with private key           
             var decryptedToken = Jose.JWT.Decode(encryptedToken, _privateEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+                Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             return Json(new string[] {
                 $"Original token: {token}",
@@ -83,14 +81,14 @@ namespace Marvin.SigningAndEncryption.Controllers
         public IActionResult SignAndEncryptToken()
         {
             var signedToken =
-                Jose.JWT.Encode(token, _privateSigningKey, JwsAlgorithm.RS256);
+                Jose.JWT.Encode(token, _privateSigningKey, Jose.JwsAlgorithm.RS256);
 
             var signedAndEncryptedToken = Jose.JWT.Encode(signedToken, _publicEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+                Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             var signedAndDecryptedToken =
                   Jose.JWT.Decode(signedAndEncryptedToken, _privateEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+                Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             var decodedAndDecryptedToken =
                 Jose.JWT.Decode(signedAndDecryptedToken, _publicSigningKey);
@@ -109,17 +107,17 @@ namespace Marvin.SigningAndEncryption.Controllers
         {
             var encryptedToken =
              Jose.JWT.Encode(token, _publicEncryptionKey,
-             JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+             Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             var encryptedAndSignedToken =
-                Jose.JWT.Encode(encryptedToken, _privateSigningKey, JwsAlgorithm.RS256);
+                Jose.JWT.Encode(encryptedToken, _privateSigningKey, Jose.JwsAlgorithm.RS256);
 
             var encryptedAndDecodedToken =
                 Jose.JWT.Decode(encryptedAndSignedToken, _publicSigningKey);
 
             var decryptedAndDecodedToken =
                 Jose.JWT.Decode(encryptedAndDecodedToken, _privateEncryptionKey,
-                JweAlgorithm.RSA_OAEP, JweEncryption.A128CBC_HS256);
+                Jose.JweAlgorithm.RSA_OAEP, Jose.JweEncryption.A128CBC_HS256);
 
             return Json(new string[] {
                 $"Original token: {token}",
