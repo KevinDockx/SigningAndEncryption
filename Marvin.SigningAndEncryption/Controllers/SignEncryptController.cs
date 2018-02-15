@@ -17,7 +17,7 @@ namespace Marvin.SigningAndEncryption.Controllers
 
         private Dictionary<string, object> token = new Dictionary<string, object>()
             {
-                { "sub", "signedkevin" },
+                { "sub", "kevin" },
                 { "exp", 1300819380 }
             };
 
