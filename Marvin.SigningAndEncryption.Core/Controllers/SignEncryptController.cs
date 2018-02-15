@@ -37,7 +37,37 @@ namespace Marvin.SigningAndEncryption.Core.Controllers
         [HttpGet("signtoken")]
         public IActionResult SignToken()
         {
-            throw new NotImplementedException();        
+            var signedToken = string.Empty;
+            var decodedToken = string.Empty;
+            var signatureIsValid = false;
+
+            var serializedToken = JsonConvert.SerializeObject(token);
+            byte[] signedTokenAsByteArray;
+
+            // sign with private key    
+            using (var privateSigningKey = _signingCertificate.GetRSAPrivateKey())
+            { 
+                signedTokenAsByteArray = privateSigningKey
+                    .SignData(Encoding.Default.GetBytes(serializedToken),
+                    HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                              
+                signedToken = Encoding.Default.GetString(signedTokenAsByteArray);
+            }
+
+            // check signature with public key 
+            using (var publicSigningKey = _signingCertificate.GetRSAPublicKey())
+            {
+                signatureIsValid = publicSigningKey
+                    .VerifyData(Encoding.Default.GetBytes(serializedToken), signedTokenAsByteArray,
+                    HashAlgorithmName.SHA256, RSASignaturePadding.Pss);               
+            }
+            
+            return Json(new string[] {
+                $"Original token: {serializedToken}",
+                $"Signed token: {signedToken}",
+                $"Signature valid? {signatureIsValid}"
+            }
+            );
         }
 
         
@@ -53,9 +83,9 @@ namespace Marvin.SigningAndEncryption.Core.Controllers
             {
                 // encrypt with public key.  Input must be byte[].
                 encryptedTokenAsByteArray = publicEncryptionKey
-                .Encrypt(Encoding.UTF8.GetBytes(serializedToken), RSAEncryptionPadding.OaepSHA256);
+                .Encrypt(Encoding.Default.GetBytes(serializedToken), RSAEncryptionPadding.OaepSHA256);
 
-                encryptedToken = Encoding.UTF8.GetString(encryptedTokenAsByteArray);
+                encryptedToken = Encoding.Default.GetString(encryptedTokenAsByteArray);
             }
 
             using (var privateEncryptionKey = _encryptionCertificate.GetRSAPrivateKey())
@@ -64,7 +94,7 @@ namespace Marvin.SigningAndEncryption.Core.Controllers
                 byte[] decryptedTokenAsByteArray = privateEncryptionKey
                 .Decrypt(encryptedTokenAsByteArray, RSAEncryptionPadding.OaepSHA256);
 
-                decryptedToken = Encoding.UTF8.GetString(decryptedTokenAsByteArray);
+                decryptedToken = Encoding.Default.GetString(decryptedTokenAsByteArray);
             }
 
             return Json(new string[] {
